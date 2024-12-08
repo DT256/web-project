@@ -100,3 +100,8 @@ git push origin feature/your-feature-name
 ```
 5. **Tạo Pull Request**
 
+## Danh sách thành viên
+1. **Bùi Đức Thắng - 22110422**
+2. **Nguyễn Hoài Tân - 22110413**
+3. **Trần Phi Thắng - 22110424**
+4. **Võ Nguyễn Xuân Thịnh - 22110429**
