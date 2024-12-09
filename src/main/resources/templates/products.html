@@ -89,7 +89,7 @@
                                 <div class="sidebar-category">
                                     <ul id="category-list">
                                         <li class="title"><i class="fa fa-bars"></i> Danh mục</li>
-                                        <!-- Danh sách category sẽ được thêm vào đây bằng Ajax -->
+
                                     </ul>
                                 </div>
                             </div>
@@ -395,7 +395,7 @@
 
                     // Duyệt qua danh sách categories và thêm vào danh sách trong HTML
                     data.forEach(function(category) {
-                        var listItem = `<li id="${category.id}" ><a href="#" category-id="${category.id}">${category.name}</a></li>`;
+                        var listItem = `<li id="${category.id}" ><p href="#" category-id="${category.id}">${category.name}</p></li>`;
                         categoryList.append(listItem); // Thêm item vào trong ul
                     });
                 },

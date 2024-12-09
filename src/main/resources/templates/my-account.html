@@ -203,12 +203,18 @@
             });
 
             // Xem chi tiết đơn hàng
-            window.viewOrderDetails = function (orderId) {
+            window.viewOrderDetails = function (orderId,shippingStatus) {
+
                 const token = localStorage.getItem("jwtToken");
                 if (!token) {
                     showAlert("Bạn cần đăng nhập để xem chi tiết đơn hàng.", "danger");
                     return;
                 }
+
+                    // if (shippingStatus !== "DELIVERED") { // Fixed spelling of "DELIVERIED" to "DELIVERED"
+                    //     document.getElementById("btn-1").hide(); // Correctly accesses the button and sets its display property
+
+
 
                 $.ajax({
                     url: `/api/history/details/${orderId}`, // API trả về chi tiết đơn hàng
