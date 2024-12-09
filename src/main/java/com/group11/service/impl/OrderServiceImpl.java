@@ -189,6 +189,19 @@ public class OrderServiceImpl implements IOrderService {
         return response;
     }
 
+    @Override
+    public void setDelivering(Long id) {
+        OrderEntity order = orderRepository.findById(id).get();
+        order.setShippingStatus(OrderShippingStatus.DELIVERING);
+        orderRepository.save(order);
+    }
+
+    @Override
+    public void setDeliveried(Long id) {
+        OrderEntity order = orderRepository.findById(id).get();
+        order.setShippingStatus(OrderShippingStatus.DELIVERIED);
+        orderRepository.save(order);
+    }
 
 
     @Override

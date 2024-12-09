@@ -62,7 +62,7 @@
 
                                         <div class="quantity-cart-box d-flex align-items-center mt-20 mb-20">
                                             <div class="quantity">
-                                                <div class="pro-qty"><input type="text" value="1"></div>
+                                                <div class="pro-qty"><input type="text" value="1" id="quantity"></div>
                                             </div>
                                         </div>
                                         <span  class="add-to-cart" id="cart"
@@ -72,8 +72,8 @@
                                             </a>
                                         </span>
 
-                                        <span class="action_link" id="buyNow">
-                                            <a class="buy-btn" href="#"
+                                        <span class="action_link" id="buyNow" onclick="buyNow()">
+                                            <a class="buy-btn"
                                                style=" background-color: #D8373E; color: white; text-decoration: none; font-size: 16px; border-radius: 5px;">
                                                 Mua ngay
                                             </a>
@@ -193,6 +193,42 @@
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        const currentUrl = window.location.href;
+        const id = currentUrl.split("/").pop();
+        console.log(id);
+
+        function buyNow(){
+            // Thu thập thông tin sản phẩm từ giao diện
+            const cartItems = [];
+            var quantity = parseInt($("#quantity").val())
+            cartItems.push({
+                productId: id,
+                quantity: quantity,
+            });
+            console.log(cartItems)
+
+            // Gửi dữ liệu đến API bằng AJAX
+            $.ajax({
+                url: "/api/orders/checkout",
+                type: "POST",
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                contentType: "application/json",
+                data: JSON.stringify(cartItems),
+                success: function (response) {
+                    localStorage.setItem("checkoutData", JSON.stringify(response));
+                    // Chuyển hướng sang trang /checkout với dữ liệu trả về
+                    window.location.href = `/checkout`;
+                },
+                error: function (xhr, status, error) {
+                    console.error("Lỗi:", error);
+                    alert("Số lượng sản phẩm không đủ");
+                },
+            });
+
+        }
+
         function addToCart(productId) {
             // Gọi API thêm sản phẩm vào giỏ hàng
             $.ajax({
@@ -329,8 +365,12 @@
                 });
             }
 
-            // Gọi hàm để tải chi tiết sản phẩm
-            loadProductDetails(1); // Thay `1` bằng ID sản phẩm thực tế
+            // Lấy URL hiện tại từ thanh trình duyệt
+            const currentUrl = window.location.href;
+            const id = currentUrl.split("/").pop();
+            console.log(id);
+
+            loadProductDetails(id);
         });
     </script>
     </body>

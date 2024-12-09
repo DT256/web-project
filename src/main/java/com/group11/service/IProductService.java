@@ -37,4 +37,9 @@ public interface IProductService {
 //    public ProductEntity addProduct(ProductDTO productDTO);
 
     ProductEntity findById(Long id);
+
+    Page<ProductEntity> findByCategory(Long category, int page, int size);
+    Page<ProductEntity> findByManufacturer(Long manufacturer,  int page, int size);
+
+
 }

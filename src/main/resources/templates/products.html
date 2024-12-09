@@ -102,11 +102,11 @@
                                 </div>
                                 <div class="sidebar-widget-body">
                                     <ul>
-                                        <li><i class="fa fa-angle-right"></i><a href="#">MSI</a></li>
-                                        <li><i class="fa fa-angle-right"></i><a href="#">Asus</a></li>
-                                        <li><i class="fa fa-angle-right"></i><a href="#">Acer</a></li>
-                                        <li><i class="fa fa-angle-right"></i><a href="#">Dell</a></li>
-                                        <li><i class="fa fa-angle-right"></i><a href="#">Lenovo</a></li>
+                                        <li><i class="fa fa-angle-right"></i><a data-manufacturer="2">MSI</a></li>
+                                        <li><i class="fa fa-angle-right"></i><a data-manufacturer="1">Asus</a></li>
+                                        <li><i class="fa fa-angle-right"></i><a data-manufacturer="4">Acer</a></li>
+                                        <li><i class="fa fa-angle-right"></i><a data-manufacturer="3">Dell</a></li>
+                                        <li><i class="fa fa-angle-right"></i><a data-manufacturer="5">Lenovo</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -202,20 +202,32 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
+        // Lắng nghe sự kiện click danh mục
+
         $(document).ready(function () {
+
+            // Xử lý click trên danh sách các hãng sản xuất
+            $(".sidebar-widget-body").on("click", "a", function (e) {
+                e.preventDefault();
+                const manufacturerId = $(this).data("manufacturer");
+                const url = `/api/products/manufacturer/${manufacturerId}`;
+                currentPage = 0; // Reset về trang đầu
+                fetchProducts(url, currentPage);
+            });
+
+
+
             const productContainer = $("#productContainer");
             const paginationContainer = $("#pagination");
             let currentPage = 0; // Trang hiện tại
             const pageSize = 20; // Số sản phẩm mỗi trang
 
             // Hàm gọi API và hiển thị sản phẩm
-            function fetchProducts(keyword = "", page = 0) {
-                const apiUrl = `/api/products/getAll?keyword=${encodeURIComponent(keyword)}&page=${page}&size=${pageSize}`;
-
+            // Hàm gọi API và hiển thị sản phẩm
+            function fetchProducts(url, page = 0) {
                 $.ajax({
-                    url: apiUrl,
+                    url: `${url}?page=${page}&size=${pageSize}`,
                     method: "GET",
-
                     success: function (response) {
                         renderProducts(response.content); // Hiển thị sản phẩm
                         renderPagination(response.totalPages, page); // Hiển thị phân trang
@@ -225,6 +237,15 @@
                     },
                 });
             }
+
+            // Lắng nghe sự kiện click hãng sản xuất
+            $(".sidebar-widget-body").on("click", "a", function (e) {
+                e.preventDefault();
+                const manufacturerId = $(this).data("manufacturer");
+                const url = `/api/products/manufacturer/${manufacturerId}`;
+                currentPage = 0; // Reset về trang đầu tiên
+                fetchProducts(url, currentPage);
+            });
 
             // Hàm hiển thị danh sách sản phẩm
             function renderProducts(products) {
@@ -357,7 +378,7 @@
             });
 
             // Gọi lần đầu để hiển thị sản phẩm
-            fetchProducts();
+            fetchProducts('/api/products/getAll');
         });
 
         // Lấy category
@@ -368,18 +389,20 @@
                 method: 'GET',           // Phương thức gọi API
 
                 success: function(data) {
+                    console.log(data)
                     // Khi nhận được dữ liệu, chúng ta sẽ hiển thị danh sách categories
                     var categoryList = $('#category-list'); // Lấy phần tử ul để hiển thị dữ liệu
 
                     // Duyệt qua danh sách categories và thêm vào danh sách trong HTML
                     data.forEach(function(category) {
-                        var listItem = `<li><a href="#">${category.name}</a></li>`;
+                        var listItem = `<li id="${category.id}" ><a href="#" category-id="${category.id}">${category.name}</a></li>`;
                         categoryList.append(listItem); // Thêm item vào trong ul
                     });
                 },
                 error: function() {
                     alert("Có lỗi xảy ra khi tải danh sách categories.");
                 }});
+            fetchProducts();
         });
 
     </script>
