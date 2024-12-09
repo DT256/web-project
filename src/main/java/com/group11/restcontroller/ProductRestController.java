@@ -83,6 +83,26 @@ public class ProductRestController {
         return ResponseEntity.ok(products);
     }
 
+    @GetMapping("/category/{id}")
+    public ResponseEntity<Page<ProductEntity>> getAllProductsByCategoies(
+            @PathVariable Long id,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size
+    ) {
+        Page<ProductEntity> products = productService.findByCategory(id, page, size);
+        return ResponseEntity.ok(products);
+    }
+
+    @GetMapping("/manufacturer/{id}")
+    public ResponseEntity<Page<ProductEntity>> getAllProductsByManufacturer(
+            @PathVariable Long id,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "20") int size
+    ) {
+        Page<ProductEntity> products = productService.findByManufacturer(id, page, size);
+        return ResponseEntity.ok(products);
+    }
+
     @DeleteMapping("/remove/{productId}")
     public ResponseEntity<String> removeProduct(@RequestHeader("Authorization") String authorizationHeader,@PathVariable Long productId) {
         try {
@@ -105,6 +125,12 @@ public class ProductRestController {
             return ResponseEntity.status(500).body("An error occurred while removing the product");
         }
     }
+
+
+
+
+
+
 
 
 }

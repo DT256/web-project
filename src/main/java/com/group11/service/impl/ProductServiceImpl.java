@@ -147,6 +147,18 @@ public class ProductServiceImpl implements IProductService {
         return productRepository.findById(id).orElse(null);
     }
 
+    @Override
+    public Page<ProductEntity> findByCategory(Long category,  int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productRepository.findByCategoryId(category, pageable);
+    }
+
+    @Override
+    public Page<ProductEntity> findByManufacturer(Long manufacturer,  int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return productRepository.findByManufacturerId(manufacturer, pageable);
+    }
+
 
 //
 //@Override

@@ -84,5 +84,10 @@ public interface ProductRepository extends JpaRepository<ProductEntity, Long> {
     @Query("SELECT p FROM ProductEntity p WHERE p.status= 'AVAILABLE' ORDER BY p.productID ASC")
     List<ProductEntity> findTop10NewestProducts();
 
+    @Query("SELECT p FROM ProductEntity p WHERE p.category.categoryID = :categoryId")
+    Page<ProductEntity> findByCategoryId(@Param("categoryId") Long categoryId, Pageable pageable);
+
+    @Query("SELECT p FROM ProductEntity p WHERE p.manufacturer.id = :manufacturerId")
+    Page<ProductEntity> findByManufacturerId(@Param("manufacturerId") Long manufacturerId, Pageable pageable);
 
 }
