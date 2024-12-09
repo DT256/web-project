@@ -8,8 +8,11 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Quản lý Nhà Sản Xuất</title>
+
         <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+
     </head>
     <body>
 
@@ -24,7 +27,7 @@
             <tr>
                 <th style="border: 3px solid black;text-align: center; vertical-align: middle; " scope="col">ID</th>
                 <th style="border: 3px solid black;text-align: center; vertical-align: middle; " scope="col">Tên Nhà Sản Xuất</th>
-                <th style="border: 3px solid black;text-align: center; vertical-align: middle; width: 100px " scope="col"></th>
+                <th style="border: 3px solid black;text-align: center; vertical-align: middle; width: 200px " scope="col"></th>
             </tr>
             </thead>
             <tbody id="manufacturerTableBody">
@@ -77,116 +80,149 @@
 
 
     <script>
-        $(document).ready(function() {
-            // Load manufacturer list when page is ready
-            loadManufacturers();
+        function checkAdminRole() {
+            const token = localStorage.getItem('jwtToken'); // Lấy token từ localStorage hoặc cookie
+            if (!token) {
+                alert('Bạn không có quyền truy cập!');
+                return false;
+            }
 
-            // Submit the form to add a manufacturer
-            $('#addManufacturerForm').on('submit', function(e) {
-                e.preventDefault();
-                const manufacturerName = $('#manufacturerName').val();
-                if (manufacturerName) {
-                    $.ajax({
-                        url: '/api/manufacturers',
-                        method: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ name: manufacturerName }),
-                        success: function(response) {
-                            $('#addManufacturerModal').modal('hide');
-                            loadManufacturers();
-                            $('#manufacturerName').val('');
-                        },
-                        error: function(xhr, status, error) {
-                            alert("Error adding manufacturer: " + error);
-                        }
-                    });
+            try {
+                const decoded = jwt_decode(token); // Giải mã token
+                const role = decoded.role; // Lấy vai trò từ payload
+                if (role === 'Customer') {
+                    alert('Chỉ quản trị viên mới có quyền truy cập!');
+                    return false;
                 }
-            });
+                return true;
+            } catch (error) {
+                console.error('Token không hợp lệ:', error);
+                alert('Token không hợp lệ! Vui lòng đăng nhập lại.');
+                return false;
+            }
+        }
+        $(document).ready(() => {
+            if (checkAdminRole()) {$(document).ready(function() {
+                // Load manufacturer list when page is ready
+                loadManufacturers();
 
-            // Function to load manufacturers list
-            function loadManufacturers() {
-                $.ajax({
-                    url: '/api/manufacturers',  // Your API endpoint to get manufacturers
-                    method: 'GET',
-                    success: function(response) {
-                        $('#manufacturerTableBody').empty();
-                        response.forEach(function(manufacturer) {
-                            $('#manufacturerTableBody').append(`
+                // Submit the form to add a manufacturer
+                $('#addManufacturerForm').on('submit', function(e) {
+
+                    const manufacturerName = $('#manufacturerName').val();
+                    if (manufacturerName) {
+                        $.ajax({
+                            url: '/api/manufacturers',
+                            method: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ name: manufacturerName }),
+                            success: function(response) {
+                                $('#addManufacturerModal').modal('hide');
+                                loadManufacturers();
+                                $('#manufacturerName').val('');
+                            },
+                            error: function(xhr, status, error) {
+                                alert("Error adding manufacturer: " + error);
+                            }
+                        });
+                    }
+                });
+
+                // Function to load manufacturers list
+                function loadManufacturers() {
+                    $.ajax({
+                        url: '/api/manufacturers',  // Your API endpoint to get manufacturers
+                        method: 'GET',
+                        success: function(response) {
+                            $('#manufacturerTableBody').empty();
+                            response.forEach(function(manufacturer) {
+                                $('#manufacturerTableBody').append(`
             <tr>
               <td>${manufacturer.id}</td>
               <td>${manufacturer.name}</td>
               <td>
-                <button class="btn btn-primary btn-sm edit-btn" data-id="${manufacturer.id}" data-name="${manufacturer.name}"> <i class="bi bi-pencil"></i></button>
-                <button class="btn btn-danger btn-sm delete-btn" data-id="${manufacturer.id}"><i class="bi bi-trash"></i></button>
+                <button class="btn btn-primary btn-sm edit-btn" data-id="${manufacturer.id}" data-name="${manufacturer.name}">Sửa</button>
+                <button class="btn btn-danger btn-sm delete-btn" data-id="${manufacturer.id}">Xóa</i></button>
               </td>
             </tr>
           `);
-                        });
+                            });
 
-                        // Attach event for edit buttons
-                        $('.edit-btn').on('click', function() {
-                            const manufacturerId = $(this).data('id');
-                            const manufacturerName = $(this).data('name');
-                            openEditModal(manufacturerId, manufacturerName);
-                        });
+                            // Attach event for edit buttons
+                            $('.edit-btn').on('click', function() {
+                                const manufacturerId = $(this).data('id');
+                                const manufacturerName = $(this).data('name');
+                                openEditModal(manufacturerId, manufacturerName);
+                            });
 
-                        // Attach event for delete buttons
-                        $('.delete-btn').on('click', function() {
-                            const manufacturerId = $(this).data('id');
-                            deleteManufacturer(manufacturerId);
+                            // Attach event for delete buttons
+                            $('.delete-btn').on('click', function() {
+                                const manufacturerId = $(this).data('id');
+                                deleteManufacturer(manufacturerId);
+                            });
+                        },
+                        error: function(xhr, status, error) {
+                            alert("Error loading manufacturers: " + error);
+                        }
+                    });
+                }
+
+                // Function to open the edit modal
+                function openEditModal(id, name) {
+                    $('#editManufacturerName').val(name);
+                    $('#editManufacturerForm').data('id', id);  // Store the ID in the form
+                    $('#editManufacturerModal').modal('show');
+                }
+
+                // Submit the form to update a manufacturer
+                $('#editManufacturerForm').on('submit', function(e) {
+                    e.preventDefault();
+                    const manufacturerId = $(this).data('id');
+                    const manufacturerName = $('#editManufacturerName').val();
+                    if (manufacturerName) {
+                        $.ajax({
+                            url: `/api/manufacturers/${manufacturerId}`,
+                            method: 'PUT',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ name: manufacturerName }),
+                            success: function(response) {
+                                $('#editManufacturerModal').modal('hide');
+                                loadManufacturers();
+                            },
+                            error: function(xhr, status, error) {
+                                alert("Error updating manufacturer: " + error);
+                            }
                         });
-                    },
-                    error: function(xhr, status, error) {
-                        alert("Error loading manufacturers: " + error);
                     }
                 });
-            }
 
-            // Function to open the edit modal
-            function openEditModal(id, name) {
-                $('#editManufacturerName').val(name);
-                $('#editManufacturerForm').data('id', id);  // Store the ID in the form
-                $('#editManufacturerModal').modal('show');
-            }
-
-            // Submit the form to update a manufacturer
-            $('#editManufacturerForm').on('submit', function(e) {
-                e.preventDefault();
-                const manufacturerId = $(this).data('id');
-                const manufacturerName = $('#editManufacturerName').val();
-                if (manufacturerName) {
-                    $.ajax({
-                        url: `/api/manufacturers/${manufacturerId}`,
-                        method: 'PUT',
-                        contentType: 'application/json',
-                        data: JSON.stringify({ name: manufacturerName }),
-                        success: function(response) {
-                            $('#editManufacturerModal').modal('hide');
-                            loadManufacturers();
-                        },
-                        error: function(xhr, status, error) {
-                            alert("Error updating manufacturer: " + error);
+                // Function to delete manufacturer
+                function deleteManufacturer(id) {
+                    const token = localStorage.getItem('jwtToken');
+                    const decoded = jwt_decode(token); // Giải mã token để lấy thông tin vai trò
+                    const role = decoded.role;
+                    if(role === 'Admin') {
+                        if (confirm('Bạn có chắc chắn muốn xóa nhà sản xuất này?')) {
+                            $.ajax({
+                                url: `/api/manufacturers/${id}`,
+                                method: 'DELETE',
+                                success: function (response) {
+                                    loadManufacturers();
+                                },
+                                error: function (xhr, status, error) {
+                                    alert("Error deleting manufacturer: " + error);
+                                }
+                            });
                         }
-                    });
+                    }
+                    else{
+                        alert("Bạn không được phép thực hiện hành động này")
+                    }
                 }
+            });}
+
             });
 
-            // Function to delete manufacturer
-            function deleteManufacturer(id) {
-                if (confirm('Bạn có chắc chắn muốn xóa nhà sản xuất này?')) {
-                    $.ajax({
-                        url: `/api/manufacturers/${id}`,
-                        method: 'DELETE',
-                        success: function(response) {
-                            loadManufacturers();
-                        },
-                        error: function(xhr, status, error) {
-                            alert("Error deleting manufacturer: " + error);
-                        }
-                    });
-                }
-            }
-        });
 
     </script>
     </body>

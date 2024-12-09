@@ -153,195 +153,240 @@
     <!-- Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).ready(function () {
-            const token = localStorage.getItem('jwtToken');
-            const path = window.location.pathname;
-            const parts = path.split('/'); // ["", "customers", "1"]
-            const userID = parts[parts.length - 1];
-            const pageSize = 10; // Số lượng mục mỗi trang
-            let currentPage = 0; // Trang hiện tại
-
-            function loadUserDetail(){
-                if(token){
-                    $.ajax({
-                        url: `/api/users/${userID}`,
-                        type: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        success: function (user){
-                            console.log(user)
-                            $('#userID').text(user.userID);
-                            $('#name').text(user.name);
-                            $('#email').text(user.email);
-                            $('#gender').text(user.gender ? user.gender : "Chưa có");
-                            $('#phone').text(user.phone ? user.phone : "Chưa có")
-                            var address = user.address
-                            var addressStr = ""
-                            if(address != null){
-                                addressStr += address.commune + ", " + address.district + ", " +address.province + ", " +address.country
-                            }
-                            $('#address').text(addressStr !== "" ? addressStr : "Chưa có")
-                            $('#active').text(user.active === true ? "Đang hoạt động" : "Bị khóa")
-                            // Điều khiển hiển thị nút Khóa/Mở khóa tài khoản
-                            if (user.active) {
-                                $('#lockButton').show(); // Hiển thị nút khóa nếu tài khoản đang hoạt động
-                                $('#unlockButton').hide(); // Ẩn nút mở khóa nếu tài khoản đang hoạt động
-                            } else {
-                                $('#unlockButton').show(); // Hiển thị nút mở khóa nếu tài khoản đang bị khóa
-                                $('#lockButton').hide(); // Ẩn nút khóa nếu tài khoản đang bị khóa
-                            }
-                        }
-                    })
-                }
+        function checkAdminRole() {
+            const token = localStorage.getItem('jwtToken'); // Lấy token từ localStorage hoặc cookie
+            if (!token) {
+                alert('Bạn không có quyền truy cập!');
+                return false;
             }
 
-            function loadOrder(page) {
-                if (token) {
-                    $.ajax({
-                        url: `/api/orders/user/${userID}?page=${page}&size=${pageSize}`,
-                        type: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        success: function (response) {
-                            console.log(response)
-                            const {content: orderList, totalPages} = response;
-                            var tableBody = $('#orderTable tbody');
-                            const pagination = $('#pagination');
+            try {
+                const decoded = jwt_decode(token); // Giải mã token
+                const role = decoded.role; // Lấy vai trò từ payload
+                if (role === 'Customer') {
+                    alert('Chỉ quản trị viên mới có quyền truy cập!');
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Token không hợp lệ:', error);
+                alert('Token không hợp lệ! Vui lòng đăng nhập lại.');
+                return false;
+            }
+        }
+        $(document).ready(() => {
+            if (checkAdminRole()) {// bỏ hết script ở đây
+                $(document).ready(function () {
+                    const token = localStorage.getItem('jwtToken');
+                    const path = window.location.pathname;
+                    const parts = path.split('/'); // ["", "customers", "1"]
+                    const userID = parts[parts.length - 1];
+                    const pageSize = 10; // Số lượng mục mỗi trang
+                    let currentPage = 0; // Trang hiện tại
 
-                            // Xóa dữ liệu cũ
-                            tableBody.empty();
-                            pagination.empty();
-                            if (orderList.length === 0) {
-                                // Nếu không có dữ liệu, hiển thị dòng thông báo
-                                tableBody.append('<tr><td colspan="8" class="text-center">Không có đơn hàng nào!</td></tr>');
-                            } else {
-                                const shippingStatusMap = {
-                                    NONDELIVERY: "Chưa giao",
-                                    DELIVERING: "Đang giao",
-                                    DELIVERIED: "Đã giao",
-                                    CANCELED: "Đã hủy"
-                                };
-                                orderList.forEach(function (order, index) {
-                                    const row = `
+                    function loadUserDetail(){
+                        if(token){
+                            $.ajax({
+                                url: `/api/users/${userID}`,
+                                type: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                success: function (user){
+                                    console.log(user)
+                                    $('#userID').text(user.userID);
+                                    $('#name').text(user.name);
+                                    $('#email').text(user.email);
+                                    $('#gender').text(user.gender ? user.gender : "Chưa có");
+                                    $('#phone').text(user.phone ? user.phone : "Chưa có")
+                                    var address = user.address
+                                    var addressStr = ""
+                                    if(address != null){
+                                        addressStr += address.commune + ", " + address.district + ", " +address.province + ", " +address.country
+                                    }
+                                    $('#address').text(addressStr !== "" ? addressStr : "Chưa có")
+                                    $('#active').text(user.active === true ? "Đang hoạt động" : "Bị khóa")
+                                    // Điều khiển hiển thị nút Khóa/Mở khóa tài khoản
+                                    if (user.active) {
+                                        $('#lockButton').show(); // Hiển thị nút khóa nếu tài khoản đang hoạt động
+                                        $('#unlockButton').hide(); // Ẩn nút mở khóa nếu tài khoản đang hoạt động
+                                    } else {
+                                        $('#unlockButton').show(); // Hiển thị nút mở khóa nếu tài khoản đang bị khóa
+                                        $('#lockButton').hide(); // Ẩn nút khóa nếu tài khoản đang bị khóa
+                                    }
+                                }
+                            })
+                        }
+                    }
+
+                    function loadOrder(page) {
+                        if (token) {
+                            $.ajax({
+                                url: `/api/orders/user/${userID}?page=${page}&size=${pageSize}`,
+                                type: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                success: function (response) {
+                                    console.log(response)
+                                    const {content: orderList, totalPages} = response;
+                                    var tableBody = $('#orderTable tbody');
+                                    const pagination = $('#pagination');
+
+                                    // Xóa dữ liệu cũ
+                                    tableBody.empty();
+                                    pagination.empty();
+                                    if (orderList.length === 0) {
+                                        // Nếu không có dữ liệu, hiển thị dòng thông báo
+                                        tableBody.append('<tr><td colspan="8" class="text-center">Không có đơn hàng nào!</td></tr>');
+                                    } else {
+                                        const shippingStatusMap = {
+                                            NONDELIVERY: "Chưa giao",
+                                            DELIVERING: "Đang giao",
+                                            DELIVERIED: "Đã giao",
+                                            CANCELED: "Đã hủy"
+                                        };
+                                        orderList.forEach(function (order, index) {
+                                            const row = `
     <tr data-id="${order.orderId}">
         <td>${index + 1}</td>
         <td>${order.orderId}</td>
         <td>${order.orderDate ? new Date(order.orderDate).toLocaleDateString("vi-VN") : "Chưa có"}</td>
         <td>${shippingStatusMap[order.shippingStatus]}</td>
         <td>${order.totalAmount.toLocaleString("vi-VN", {
-                                        style: "currency",
-                                        currency: "VND",
-                                    })}</td>
+                                                style: "currency",
+                                                currency: "VND",
+                                            })}</td>
         <td style="text-align: center; vertical-align: middle;">
             <a href="/admin/orders/${order.orderId}" class="btn btn-primary">Chi tiết</a>
         </td>
     </tr>`;
-                                    tableBody.append(row);
-                                });
+                                            tableBody.append(row);
+                                        });
 
-                            }
-                            // Tạo nút phân trang
-                            const prevButton = `<li class="page-item ${page === 0 ? 'disabled' : ''}">
+                                    }
+                                    // Tạo nút phân trang
+                                    const prevButton = `<li class="page-item ${page === 0 ? 'disabled' : ''}">
                                     <a class="page-link" href="#">« Previous</a>
                                     </li>`;
 
-                            const nextButton = `<li class="page-item ${page === totalPages - 1 ? 'disabled' : ''}">
+                                    const nextButton = `<li class="page-item ${page === totalPages - 1 ? 'disabled' : ''}">
                                     <a class="page-link" href="#">Next »</a>
                                     </li>`;
 
-                            pagination.append(prevButton);
+                                    pagination.append(prevButton);
 
-                            // Create page number buttons
-                            for (let i = 0; i < totalPages; i++) {
-                                const activeClass = i === page ? 'active' : '';
-                                const pageButton = `<li class="page-item ${activeClass}"><a class="page-link" href="#">${i + 1}</a></li>`;
-                                pagination.append(pageButton);
+                                    // Create page number buttons
+                                    for (let i = 0; i < totalPages; i++) {
+                                        const activeClass = i === page ? 'active' : '';
+                                        const pageButton = `<li class="page-item ${activeClass}"><a class="page-link" href="#">${i + 1}</a></li>`;
+                                        pagination.append(pageButton);
+                                    }
+
+                                    pagination.append(nextButton);
+                                    // Gắn sự kiện khi nhấn nút phân trang
+                                    $('.page-link').on('click', function (e) {
+                                        e.preventDefault();
+
+                                        const selectedPage = $(this).text().trim();
+
+                                        if (selectedPage === '« Trước') {
+                                            if (page > 0) loadOrder(page - 1); // Go to previous page
+                                        } else if (selectedPage === 'Sau »') {
+                                            if (page < totalPages - 1) loadOrder(page + 1); // Go to next page
+                                        } else {
+                                            loadOrder(parseInt(selectedPage) - 1); // Go to specific page
+                                        }
+                                    });
+                                },
+                                error: function (xhr, status, error) {
+                                    console.error("Error fetching customer:", error);
+                                    alert("Không thể tải dữ liệu khách hàng. Vui lòng thử lại sau!");
+                                }
+                            })
+                        }
+                    }
+
+                    // Tải trang đầu tiên khi trang được load
+                    loadUserDetail()
+                    loadOrder(currentPage);
+
+                    // Xử lý yêu cầu khóa tài khoản
+                    $('#lockButton').on('click', function (e) {
+                        e.preventDefault();
+                        // Gửi yêu cầu PUT để khóa tài khoản
+                        if (token) {
+                            const token = localStorage.getItem('jwtToken');
+                            const decoded = jwt_decode(token); // Giải mã token để lấy thông tin vai trò
+                            const role = decoded.role;
+                            if(role === 'Admin') {
+                                $.ajax({
+                                    url: `/api/users/active/${userID}`,
+                                    type: 'PUT',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`
+                                    },
+                                    data: {
+                                        active: false
+                                    },
+                                    success: function (response) {
+                                        alert(response); // Thông báo khi tài khoản bị khóa thành công
+                                        loadUserDetail(); // Tải lại thông tin người dùng
+                                    },
+                                    error: function (xhr, status, error) {
+                                        console.error("Error locking user account:", error);
+                                        alert("Không thể khóa tài khoản. Vui lòng thử lại sau!");
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                alert("Bạn không được phép thực hiện hành động này")
                             }
 
-                            pagination.append(nextButton);
-                            // Gắn sự kiện khi nhấn nút phân trang
-                            $('.page-link').on('click', function (e) {
-                                e.preventDefault();
-
-                                const selectedPage = $(this).text().trim();
-
-                                if (selectedPage === '« Trước') {
-                                    if (page > 0) loadOrder(page - 1); // Go to previous page
-                                } else if (selectedPage === 'Sau »') {
-                                    if (page < totalPages - 1) loadOrder(page + 1); // Go to next page
-                                } else {
-                                    loadOrder(parseInt(selectedPage) - 1); // Go to specific page
-                                }
-                            });
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error fetching customer:", error);
-                            alert("Không thể tải dữ liệu khách hàng. Vui lòng thử lại sau!");
-                        }
-                    })
-                }
-            }
-
-            // Tải trang đầu tiên khi trang được load
-            loadUserDetail()
-            loadOrder(currentPage);
-
-            // Xử lý yêu cầu khóa tài khoản
-            $('#lockButton').on('click', function (e) {
-                e.preventDefault();
-                // Gửi yêu cầu PUT để khóa tài khoản
-                if (token) {
-                    $.ajax({
-                        url: `/api/users/active/${userID}`,
-                        type: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        data: {
-                            active: false
-                        },
-                        success: function (response) {
-                            alert(response); // Thông báo khi tài khoản bị khóa thành công
-                            loadUserDetail(); // Tải lại thông tin người dùng
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error locking user account:", error);
-                            alert("Không thể khóa tài khoản. Vui lòng thử lại sau!");
                         }
                     });
-                }
-            });
 
-            // Xử lý yêu cầu mở khóa tài khoản
-            $('#unlockButton').on('click', function (e) {
-                e.preventDefault();
-                // Gửi yêu cầu PUT để mở khóa tài khoản
-                if (token) {
-                    $.ajax({
-                        url: `/api/users/active/${userID}`,
-                        type: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        data: {
-                            active: true
-                        },
-                        success: function (response) {
-                            alert(response); // Thông báo khi tài khoản được mở khóa thành công
-                            loadUserDetail(); // Tải lại thông tin người dùng
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error unlocking user account:", error);
-                            alert("Không thể mở khóa tài khoản. Vui lòng thử lại sau!");
+                    // Xử lý yêu cầu mở khóa tài khoản
+                    $('#unlockButton').on('click', function (e) {
+                        e.preventDefault();
+                        // Gửi yêu cầu PUT để mở khóa tài khoản
+                        if (token) {
+                            const token = localStorage.getItem('jwtToken');
+                            const decoded = jwt_decode(token); // Giải mã token để lấy thông tin vai trò
+                            const role = decoded.role;
+                            if(role === 'Admin') {
+                                $.ajax({
+                                    url: `/api/users/active/${userID}`,
+                                    type: 'PUT',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`
+                                    },
+                                    data: {
+                                        active: true
+                                    },
+                                    success: function (response) {
+                                        alert(response); // Thông báo khi tài khoản được mở khóa thành công
+                                        loadUserDetail(); // Tải lại thông tin người dùng
+                                    },
+                                    error: function (xhr, status, error) {
+                                        console.error("Error unlocking user account:", error);
+                                        alert("Không thể mở khóa tài khoản. Vui lòng thử lại sau!");
+                                    }
+                                });
+                            }
+                            else
+                            {
+                                alert("Bạn không được phép thực hiện hành động này")
+                            }
+
                         }
                     });
-                }
+
+
+                }) }
             });
 
-
-        })
 
 
 

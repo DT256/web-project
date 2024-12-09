@@ -52,33 +52,56 @@
     </div>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).ready(function () {
-            const token = localStorage.getItem('jwtToken');
-            const pageSize = 10; // Số lượng mục mỗi trang
-            let currentPage = 0; // Trang hiện tại
 
-            function loadPromotions(page) {
-                if (token) {
-                    $.ajax({
-                        url: `/api/promotions?page=${page}&size=${pageSize}`,
-                        type: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        success: function (response) {
-                            const {content: promotionList, totalPages} = response;
-                            var tableBody = $('#promotionTable tbody');
-                            const pagination = $('#pagination');
+        function checkAdminRole() {
+            const token = localStorage.getItem('jwtToken'); // Lấy token từ localStorage hoặc cookie
+            if (!token) {
+                alert('Bạn không có quyền truy cập!');
+                return false;
+            }
 
-                            // Xóa dữ liệu cũ
-                            tableBody.empty();
-                            pagination.empty();
-                            if (promotionList.length === 0) {
-                                // Nếu không có dữ liệu, hiển thị dòng thông báo
-                                tableBody.append('<tr><td colspan="8" class="text-center">Không có mã khuyến mãi nào!</td></tr>');
-                            } else {
-                                promotionList.forEach(function (promotion, index) {
-                                    const row = `
+            try {
+                const decoded = jwt_decode(token); // Giải mã token
+                const role = decoded.role; // Lấy vai trò từ payload
+                if (role === 'Customer') {
+                    alert('Chỉ quản trị viên mới có quyền truy cập!');
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Token không hợp lệ:', error);
+                alert('Token không hợp lệ! Vui lòng đăng nhập lại.');
+                return false;
+            }
+        }
+        $(document).ready(() => {
+            if (checkAdminRole()) {$(document).ready(function () {
+                const token = localStorage.getItem('jwtToken');
+                const pageSize = 10; // Số lượng mục mỗi trang
+                let currentPage = 0; // Trang hiện tại
+
+                function loadPromotions(page) {
+                    if (token) {
+                        $.ajax({
+                            url: `/api/promotions?page=${page}&size=${pageSize}`,
+                            type: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            success: function (response) {
+                                const {content: promotionList, totalPages} = response;
+                                var tableBody = $('#promotionTable tbody');
+                                const pagination = $('#pagination');
+
+                                // Xóa dữ liệu cũ
+                                tableBody.empty();
+                                pagination.empty();
+                                if (promotionList.length === 0) {
+                                    // Nếu không có dữ liệu, hiển thị dòng thông báo
+                                    tableBody.append('<tr><td colspan="8" class="text-center">Không có mã khuyến mãi nào!</td></tr>');
+                                } else {
+                                    promotionList.forEach(function (promotion, index) {
+                                        const row = `
                                 <tr data-id="${promotion.promotionID}">
                                     <td>${index + 1}</td>
                                     <td>${promotion.discountAmount}</td>
@@ -97,92 +120,101 @@
                                     </td>
                                 </tr>
                             `;
-                                    tableBody.append(row);
-                                });
-                            }
-                            // Tạo nút phân trang
-                            const prevButton = `<li class="page-item ${page === 0 ? 'disabled' : ''}">
+                                        tableBody.append(row);
+                                    });
+                                }
+                                // Tạo nút phân trang
+                                const prevButton = `<li class="page-item ${page === 0 ? 'disabled' : ''}">
                                     <a class="page-link" href="#">« Previous</a>
                                     </li>`;
 
-                            const nextButton = `<li class="page-item ${page === totalPages - 1 ? 'disabled' : ''}">
+                                const nextButton = `<li class="page-item ${page === totalPages - 1 ? 'disabled' : ''}">
                                     <a class="page-link" href="#">Next »</a>
                                     </li>`;
 
-                            pagination.append(prevButton);
+                                pagination.append(prevButton);
 
-                            // Create page number buttons
-                            for (let i = 0; i < totalPages; i++) {
-                                const activeClass = i === page ? 'active' : '';
-                                const pageButton = `<li class="page-item ${activeClass}"><a class="page-link" href="#">${i + 1}</a></li>`;
-                                pagination.append(pageButton);
-                            }
-
-                            pagination.append(nextButton);
-                            // Gắn sự kiện khi nhấn nút phân trang
-                            $('.page-link').on('click', function (e) {
-                                e.preventDefault();
-
-                                const selectedPage = $(this).text().trim();
-
-                                if (selectedPage === '« Previous') {
-                                    if (page > 0) loadPromotions(page - 1); // Go to previous page
-                                } else if (selectedPage === 'Next »') {
-                                    if (page < totalPages - 1) loadPromotions(page + 1); // Go to next page
-                                } else {
-                                    loadPromotions(parseInt(selectedPage) - 1); // Go to specific page
+                                // Create page number buttons
+                                for (let i = 0; i < totalPages; i++) {
+                                    const activeClass = i === page ? 'active' : '';
+                                    const pageButton = `<li class="page-item ${activeClass}"><a class="page-link" href="#">${i + 1}</a></li>`;
+                                    pagination.append(pageButton);
                                 }
-                            });
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error fetching promotions:", error);
-                            alert("Không thể tải dữ liệu khuyến mãi. Vui lòng thử lại sau!");
-                        }
-                    })
-                }
-            }
 
-            // Sự kiện khi nhấn nút "Xóa"
-            $(document).on('click', '.btn-delete', function () {
-                const row = $(this).closest('tr');
-                const promotionID = row.data('id');
-                if (confirm("Bạn có chắc chắn muốn xóa mã khuyến mãi này?")) {
-                    $.ajax({
-                        url: '/api/promotions/' + promotionID, // API xóa khuyến mãi
-                        type: 'DELETE',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        success: function () {
-                            alert("Xóa thành công!");
-                            location.reload(); // Reload lại trang để cập nhật bảng
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error deleting promotion:", error);
-                            alert("Không thể xóa mã khuyến mãi. Vui lòng thử lại sau!");
+                                pagination.append(nextButton);
+                                // Gắn sự kiện khi nhấn nút phân trang
+                                $('.page-link').on('click', function (e) {
+                                    e.preventDefault();
+
+                                    const selectedPage = $(this).text().trim();
+
+                                    if (selectedPage === '« Previous') {
+                                        if (page > 0) loadPromotions(page - 1); // Go to previous page
+                                    } else if (selectedPage === 'Next »') {
+                                        if (page < totalPages - 1) loadPromotions(page + 1); // Go to next page
+                                    } else {
+                                        loadPromotions(parseInt(selectedPage) - 1); // Go to specific page
+                                    }
+                                });
+                            },
+                            error: function (xhr, status, error) {
+                                console.error("Error fetching promotions:", error);
+                                alert("Không thể tải dữ liệu khuyến mãi. Vui lòng thử lại sau!");
+                            }
+                        })
+                    }
+                }
+
+                    // Sự kiện khi nhấn nút "Xóa"
+                    $(document).on('click', '.btn-delete', function () {
+                        const token = localStorage.getItem('jwtToken');
+                        const decoded = jwt_decode(token); // Giải mã token để lấy thông tin vai trò
+                        const role = decoded.role;
+                        if(role === 'Admin') {
+                            const row = $(this).closest('tr');
+                            const promotionID = row.data('id');
+                            if (confirm("Bạn có chắc chắn muốn xóa mã khuyến mãi này?")) {
+                                $.ajax({
+                                    url: '/api/promotions/' + promotionID, // API xóa khuyến mãi
+                                    type: 'DELETE',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`
+                                    },
+                                    success: function () {
+                                        alert("Xóa thành công!");
+                                        location.reload(); // Reload lại trang để cập nhật bảng
+                                    },
+                                    error: function (xhr, status, error) {
+                                        console.error("Error deleting promotion:", error);
+                                        alert("Không thể xóa mã khuyến mãi. Vui lòng thử lại sau!");
+                                    }
+                                });
+                            }
+                        }
+                        else
+                        {
+                            alert("Bạn không được phép thực hiện hành động này")
                         }
                     });
-                }
-            });
 
-            // Hiển thị form cập nhật dưới hàng được chọn
-            $(document).on('click', '.btn-edit', function () {
-                const row = $(this).closest('tr');
-                const promotionID = row.data('id');
+                // Hiển thị form cập nhật dưới hàng được chọn
+                $(document).on('click', '.btn-edit', function () {
+                    const row = $(this).closest('tr');
+                    const promotionID = row.data('id');
 
-                // Lấy thông tin hiện tại của mã khuyến mãi
-                const discountAmount = row.find('td:nth-child(2)').text();
-                const remainingUses = row.find('td:nth-child(3)').text();
-                const validFrom = row.find('td:nth-child(4)').text();
-                const validTo = row.find('td:nth-child(5)').text();
-                const promotionCode = row.find('td:nth-child(6)').text();
-                const description = row.find('td:nth-child(7)').text();
+                    // Lấy thông tin hiện tại của mã khuyến mãi
+                    const discountAmount = row.find('td:nth-child(2)').text();
+                    const remainingUses = row.find('td:nth-child(3)').text();
+                    const validFrom = row.find('td:nth-child(4)').text();
+                    const validTo = row.find('td:nth-child(5)').text();
+                    const promotionCode = row.find('td:nth-child(6)').text();
+                    const description = row.find('td:nth-child(7)').text();
 
-                // Xóa form cũ nếu tồn tại
-                $('.update-form-row').remove();
+                    // Xóa form cũ nếu tồn tại
+                    $('.update-form-row').remove();
 
-                // Thêm form cập nhật ngay dưới hàng được chọn
-                const formRow = `
+                    // Thêm form cập nhật ngay dưới hàng được chọn
+                    const formRow = `
             <tr class="update-form-row">
                 <td colspan="8">
                     <form id="updateForm">
@@ -202,49 +234,50 @@
             </tr>
         `;
 
-                row.after(formRow);
+                    row.after(formRow);
 
-                // Sự kiện khi nhấn "Hủy"
-                $('.btn-cancel').on('click', function () {
-                    $('.update-form-row').remove();
-                });
+                    // Sự kiện khi nhấn "Hủy"
+                    $('.btn-cancel').on('click', function () {
+                        $('.update-form-row').remove();
+                    });
 
-                // Gửi dữ liệu cập nhật
-                $('#updateForm').on('submit', function (e) {
-                    e.preventDefault();
+                    // Gửi dữ liệu cập nhật
+                    $('#updateForm').on('submit', function (e) {
+                        e.preventDefault();
 
-                    const updatedData = {
-                        discountAmount: $('#discountAmount').val(),
-                        remainingUses: $('#remainingUses').val(),
-                        validFrom: $('#validFrom').val(),
-                        validTo: $('#validTo').val(),
-                        promotionCode: $('#promotionCode').val(),
-                        description: $('#description').val()
-                    };
+                        const updatedData = {
+                            discountAmount: $('#discountAmount').val(),
+                            remainingUses: $('#remainingUses').val(),
+                            validFrom: $('#validFrom').val(),
+                            validTo: $('#validTo').val(),
+                            promotionCode: $('#promotionCode').val(),
+                            description: $('#description').val()
+                        };
 
-                    $.ajax({
-                        url: `/api/promotions/${promotionID}`,
-                        type: 'PUT',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        contentType: 'application/json',
-                        data: JSON.stringify(updatedData),
-                        success: function () {
-                            alert("Cập nhật thành công!");
-                            loadPromotions(currentPage); // Reload lại bảng
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error fetching promotion:", error);
-                            alert("Cập nhật thất bại. Vui lòng thử lại!");
-                        }
+                        $.ajax({
+                            url: `/api/promotions/${promotionID}`,
+                            type: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            contentType: 'application/json',
+                            data: JSON.stringify(updatedData),
+                            success: function () {
+                                alert("Cập nhật thành công!");
+                                loadPromotions(currentPage); // Reload lại bảng
+                            },
+                            error: function (xhr, status, error) {
+                                console.error("Error fetching promotion:", error);
+                                alert("Cập nhật thất bại. Vui lòng thử lại!");
+                            }
+                        });
                     });
                 });
-            });
 
-            // Tải trang đầu tiên khi trang được load
-            loadPromotions(currentPage);
-        })
+                // Tải trang đầu tiên khi trang được load
+                loadPromotions(currentPage);
+            })}
+            });
     </script>
 
 

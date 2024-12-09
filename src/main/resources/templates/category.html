@@ -7,6 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Thể Loại</title>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
   </head>
@@ -83,99 +84,153 @@
   </div>
 
   <script>
-    $(document).ready(function () {
-      // Load categories list on page load
-      loadCategories();
+    function checkAdminRole() {
+      const token = localStorage.getItem('jwtToken'); // Lấy token từ localStorage hoặc cookie
+      if (!token) {
+        alert('Bạn không có quyền truy cập!');
+        return false;
+      }
 
-      // Add new category
-      $('#addCategoryForm').on('submit', function (e) {
-        e.preventDefault();
+      try {
+        const decoded = jwt_decode(token); // Giải mã token
+        const role = decoded.role; // Lấy vai trò từ payload
+        if (role === 'Customer') {
+          alert('Chỉ quản trị viên mới có quyền truy cập!');
+          return false;
+        }
+        return true;
+      } catch (error) {
+        console.error('Token không hợp lệ:', error);
+        alert('Token không hợp lệ! Vui lòng đăng nhập lại.');
+        return false;
+      }
+    }
+    $(document).ready(() => {
+      if (checkAdminRole()) {$(document).ready(function () {
+        $(document).on('click', '.remove-btn', function () {
+          const productId = $(this).data('product-id'); // Lấy productId từ thuộc tính data-product-id
 
-        const categoryData = {
-          name: $('#addCategoryName').val(),
-          description: $('#addCategoryDescription').val()
-        };
-
-        $.ajax({
-          url: '/api/categories',
-          method: 'POST',
-          contentType: 'application/json',
-          data: JSON.stringify(categoryData),
-          success: function () {
-            $('#addCategoryModal').modal('hide');
-            loadCategories();
-            $('#addCategoryName').val('');
-            $('#addCategoryDescription').val('');
-          },
-          error: function (xhr, status, error) {
-            alert('Error adding category: ' + error);
-          }
+          // Gọi API để xóa sản phẩm khỏi giỏ hàng
+          const token = localStorage.getItem("jwtToken"); // Lấy token từ localStorage
+          $.ajax({
+            url: `/api/products/remove/${productId}`,  // API để xóa sản phẩm
+            type: "DELETE",
+            headers: {
+              "Authorization": `Bearer ${token}`, // Thêm token vào header
+              "Content-Type": "application/json",
+            },
+            success: function (response) {
+              // Xóa sản phẩm khỏi giỏ hàng trên giao diện
+              $(`[data-product-id="${productId}"]`).closest('tr').remove();
+              $('#remove-success-alert').fadeIn().delay(3000).fadeOut();
+            },
+            error: function (error) {
+              console.error("Error removing product:", error);
+            }
+          });
         });
-      });
+        // Load categories list on page load
+        loadCategories();
 
-      // Open edit modal
-      $(document).on('click', '.edit-btn', function () {
-        const categoryId = $(this).data('id');
-        const categoryName = $(this).data('name');
-        const categoryDescription = $(this).data('description');
+        // Add new category
+        $('#addCategoryForm').on('submit', function (e) {
+          e.preventDefault();
 
-        $('#editCategoryName').val(categoryName);
-        $('#editCategoryDescription').val(categoryDescription);
-        $('#editCategoryForm').data('id', categoryId);
-        $('#editCategoryModal').modal('show');
-      });
+          const categoryData = {
+            name: $('#addCategoryName').val(),
+            description: $('#addCategoryDescription').val()
+          };
 
-      // Update category
-      $('#editCategoryForm').on('submit', function (e) {
-        e.preventDefault();
-
-        const categoryId = $(this).data('id');
-        const categoryData = {
-          name: $('#editCategoryName').val(),
-          description: $('#editCategoryDescription').val()
-        };
-
-        $.ajax({
-          url: `/api/categories/${categoryId}`,
-          method: 'PUT',
-          contentType: 'application/json',
-          data: JSON.stringify(categoryData),
-          success: function () {
-            $('#editCategoryModal').modal('hide');
-            loadCategories();
-          },
-          error: function (xhr, status, error) {
-            alert('Error updating category: ' + error);
-          }
+          $.ajax({
+            url: '/api/categories',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(categoryData),
+            success: function () {
+              $('#addCategoryModal').modal('hide');
+              loadCategories();
+              $('#addCategoryName').val('');
+              $('#addCategoryDescription').val('');
+            },
+            error: function (xhr, status, error) {
+              alert('Error adding category: ' + error);
+            }
+          });
         });
-      });
 
-      // Delete category
-      $(document).on('click', '.delete-btn', function () {
-        const categoryId = $(this).data('id');
-        if (confirm('Bạn có chắc chắn muốn xóa thể loại này?')) {
+        // Open edit modal
+        $(document).on('click', '.edit-btn', function () {
+          const categoryId = $(this).data('id');
+          const categoryName = $(this).data('name');
+          const categoryDescription = $(this).data('description');
+
+          $('#editCategoryName').val(categoryName);
+          $('#editCategoryDescription').val(categoryDescription);
+          $('#editCategoryForm').data('id', categoryId);
+          $('#editCategoryModal').modal('show');
+        });
+
+        // Update category
+        $('#editCategoryForm').on('submit', function (e) {
+          e.preventDefault();
+
+          const categoryId = $(this).data('id');
+          const categoryData = {
+            name: $('#editCategoryName').val(),
+            description: $('#editCategoryDescription').val()
+          };
+
           $.ajax({
             url: `/api/categories/${categoryId}`,
-            method: 'DELETE',
+            method: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(categoryData),
             success: function () {
+              $('#editCategoryModal').modal('hide');
               loadCategories();
             },
             error: function (xhr, status, error) {
-              alert('Error deleting category: ' + error);
+              alert('Error updating category: ' + error);
             }
           });
-        }
-      });
+        });
+          // Delete category
+          $(document).on('click', '.delete-btn', function () {
+            const token = localStorage.getItem('jwtToken');
+            const decoded = jwt_decode(token); // Giải mã token để lấy thông tin vai trò
+            const role = decoded.role;
+            if(role === 'Admin') {
+              const categoryId = $(this).data('id');
+              if (confirm('Bạn có chắc chắn muốn xóa thể loại này?')) {
+                $.ajax({
+                  url: `/api/categories/${categoryId}`,
+                  method: 'DELETE',
+                  success: function () {
+                    loadCategories();
+                  },
+                  error: function (xhr, status, error) {
+                    alert('Error deleting category: ' + error);
+                  }
+                });
+              }
+            }
+            else
+              {
+                alert("Bạn không được phép thực hiện hành động này")
+              }
 
-      // Load categories
-      function loadCategories() {
-        $.ajax({
-          url: '/api/categories',
-          method: 'GET',
-          success: function (response) {
-            $('#categoryTableBody').empty();
-            response.forEach(function (category) {
-              $('#categoryTableBody').append(`
+          });
+
+
+        // Load categories
+        function loadCategories() {
+          $.ajax({
+            url: '/api/categories',
+            method: 'GET',
+            success: function (response) {
+              $('#categoryTableBody').empty();
+              response.forEach(function (category) {
+                $('#categoryTableBody').append(`
                   <tr>
                     <td>${category.id}</td>
                     <td>${category.name}</td>
@@ -191,14 +246,16 @@
                     </td>
                   </tr>
                 `);
-            });
-          },
-          error: function (xhr, status, error) {
-            alert('Error loading categories: ' + error);
-          }
-        });
-      }
-    });
+              });
+            },
+            error: function (xhr, status, error) {
+              alert('Error loading categories: ' + error);
+            }
+          });
+        }
+      });}
+      });
+
   </script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
   </body>

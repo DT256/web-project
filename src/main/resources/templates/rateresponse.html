@@ -63,15 +63,37 @@
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        $(document).ready(function () {
-            // Lấy danh sách đánh giá
-            function fetchRates() {
-                $.ajax({
-                    url: "/api/admin/rates", // Endpoint API lấy danh sách đánh giá
-                    method: "GET",
-                    success: function (rates) {
-                        let content = '<table class="table table-bordered">';
-                        content += `
+        function checkAdminRole() {
+            const token = localStorage.getItem('jwtToken'); // Lấy token từ localStorage hoặc cookie
+            if (!token) {
+                alert('Bạn không có quyền truy cập!');
+                return false;
+            }
+
+            try {
+                const decoded = jwt_decode(token); // Giải mã token
+                const role = decoded.role; // Lấy vai trò từ payload
+                if (role === 'Customer') {
+                    alert('Chỉ quản trị viên mới có quyền truy cập!');
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Token không hợp lệ:', error);
+                alert('Token không hợp lệ! Vui lòng đăng nhập lại.');
+                return false;
+            }
+        }
+        $(document).ready(() => {
+            if (checkAdminRole()) {$(document).ready(function () {
+                // Lấy danh sách đánh giá
+                function fetchRates() {
+                    $.ajax({
+                        url: "/api/admin/rates", // Endpoint API lấy danh sách đánh giá
+                        method: "GET",
+                        success: function (rates) {
+                            let content = '<table class="table table-bordered">';
+                            content += `
                         <thead class="table-dark">
                             <tr>
                                 <th>ID</th>
@@ -84,27 +106,27 @@
                             </tr>
                         </thead>
                         <tbody>`;
-                        rates.forEach(rate => {
-                            // Xử lý hiển thị hình ảnh/video
-                            let mediaContent = '';
-                            if (rate.mediaUrls && rate.mediaUrls.length > 0) {
-                                mediaContent = `<div class="media-container">` +
-                                    rate.mediaUrls.map(url => {
-                                        const extension = url.split('.').pop().toLowerCase();
-                                        if (['jpg', 'png', 'jpeg'].includes(extension)) {
-                                            return `<img src="${url}" alt="media" />`;
-                                        } else if (['mp4', 'avi', 'mov'].includes(extension)) {
-                                            return `<video controls><source src="${url}" type="video/mp4"></video>`;
-                                        }
-                                        return '';
-                                    }).join('') +
-                                    `</div>`;
-                            } else {
-                                mediaContent = 'Không có hình ảnh/video';
-                            }
+                            rates.forEach(rate => {
+                                // Xử lý hiển thị hình ảnh/video
+                                let mediaContent = '';
+                                if (rate.mediaUrls && rate.mediaUrls.length > 0) {
+                                    mediaContent = `<div class="media-container">` +
+                                        rate.mediaUrls.map(url => {
+                                            const extension = url.split('.').pop().toLowerCase();
+                                            if (['jpg', 'png', 'jpeg'].includes(extension)) {
+                                                return `<img src="${url}" alt="media" />`;
+                                            } else if (['mp4', 'avi', 'mov'].includes(extension)) {
+                                                return `<video controls><source src="${url}" type="video/mp4"></video>`;
+                                            }
+                                            return '';
+                                        }).join('') +
+                                        `</div>`;
+                                } else {
+                                    mediaContent = 'Không có hình ảnh/video';
+                                }
 
 
-                            content += `
+                                content += `
                     <tr>
                         <td>${rate.rateID}</td>
                         <td>${rate.productName}</td>
@@ -116,53 +138,55 @@
                             <button class="btn btn-primary btn-sm" onclick="openRespondModal(${rate.rateID}, '${rate.content}')">Phản hồi</button>
                         </td>
                     </tr>`;
-                        });
-                        content += '</tbody></table>';
-                        $("#rateList").html(content);
-                    },
-                    error: function () {
-                        $("#rateList").html('<p class="text-danger">Không thể tải danh sách đánh giá.</p>');
-                    }
-                });
-            }
-
-            // Mở modal phản hồi
-            window.openRespondModal = function (rateID, content) {
-                $("#currentRateID").val(rateID);
-                $("#responseContent").val(''); // Clear nội dung cũ
-                $("#respondModalLabel").text(`Phản hồi đánh giá: "${content}"`);
-                $("#respondModal").modal("show");
-            };
-
-            // Lưu phản hồi
-            $("#saveResponse").on("click", function () {
-                const rateID = $("#currentRateID").val();
-                const response = $("#responseContent").val();
-
-                if (!response) {
-                    alert("Vui lòng nhập nội dung phản hồi.");
-                    return;
+                            });
+                            content += '</tbody></table>';
+                            $("#rateList").html(content);
+                        },
+                        error: function () {
+                            $("#rateList").html('<p class="text-danger">Không thể tải danh sách đánh giá.</p>');
+                        }
+                    });
                 }
 
-                $.ajax({
-                    url: `/api/admin/rates/respond/${rateID}`,
-                    method: "POST",
-                    contentType: "application/json",
-                    data: JSON.stringify(response),
-                    success: function () {
-                        alert("Phản hồi thành công!");
-                        $("#respondModal").modal("hide");
-                        fetchRates(); // Cập nhật danh sách sau khi phản hồi
-                    },
-                    error: function () {
-                        alert("Lỗi khi phản hồi.");
+                // Mở modal phản hồi
+                window.openRespondModal = function (rateID, content) {
+                    $("#currentRateID").val(rateID);
+                    $("#responseContent").val(''); // Clear nội dung cũ
+                    $("#respondModalLabel").text(`Phản hồi đánh giá: "${content}"`);
+                    $("#respondModal").modal("show");
+                };
+
+                // Lưu phản hồi
+                $("#saveResponse").on("click", function () {
+                    const rateID = $("#currentRateID").val();
+                    const response = $("#responseContent").val();
+
+                    if (!response) {
+                        alert("Vui lòng nhập nội dung phản hồi.");
+                        return;
                     }
+
+                    $.ajax({
+                        url: `/api/admin/rates/respond/${rateID}`,
+                        method: "POST",
+                        contentType: "application/json",
+                        data: JSON.stringify(response),
+                        success: function () {
+                            alert("Phản hồi thành công!");
+                            $("#respondModal").modal("hide");
+                            fetchRates(); // Cập nhật danh sách sau khi phản hồi
+                        },
+                        error: function () {
+                            alert("Lỗi khi phản hồi.");
+                        }
+                    });
                 });
+
+                // Tải danh sách đánh giá khi trang được mở
+                fetchRates();
+            }); }
             });
 
-            // Tải danh sách đánh giá khi trang được mở
-            fetchRates();
-        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     </body>

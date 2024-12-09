@@ -180,7 +180,11 @@
                     if (role === 'Customer') {
                         document.getElementById('history-menu').style.display = 'block';
                         document.getElementById('customer-menu').style.display = 'block';
-                    } else if (role === 'Admin') {
+                    } else if (role === 'Manager') {
+
+                        document.getElementById('admin-menu').style.display = 'block';
+                    }
+                    else {
                         document.getElementById('admin-menu').style.display = 'block';
                         document.getElementById('admin-dashboard').style.display = 'block';
                     }

@@ -365,30 +365,64 @@
       function attachEventHandlers() {
 
       }
+      function checkAdminRole() {
+        const token = localStorage.getItem('jwtToken'); // Lấy token từ localStorage hoặc cookie
+        if (!token) {
+          alert('Bạn không có quyền truy cập!');
+          return false;
+        }
+
+        try {
+          const decoded = jwt_decode(token); // Giải mã token
+          const role = decoded.role; // Lấy vai trò từ payload
+          if (role === 'Customer') {
+            alert('Chỉ quản trị viên mới có quyền truy cập!');
+            return false;
+          }
+          return true;
+        } catch (error) {
+          console.error('Token không hợp lệ:', error);
+          alert('Token không hợp lệ! Vui lòng đăng nhập lại.');
+          return false;
+        }
+      }
+      $(document).ready(() => {
+        if (checkAdminRole()) {$(document).on('click', '.remove-btn', function () {
+          const token = localStorage.getItem('jwtToken');
+          const decoded = jwt_decode(token); // Giải mã token để lấy thông tin vai trò
+          const role = decoded.role;
+          if(role === 'Admin') {
+            const productId = $(this).data('product-id'); // Lấy productId từ thuộc tính data-product-id
+
+            // Gọi API để xóa sản phẩm khỏi giỏ hàng
+            const token = localStorage.getItem("jwtToken"); // Lấy token từ localStorage
+            $.ajax({
+              url: `/api/products/remove/${productId}`,  // API để xóa sản phẩm
+              type: "DELETE",
+              headers: {
+                "Authorization": `Bearer ${token}`, // Thêm token vào header
+                "Content-Type": "application/json",
+              },
+              success: function (response) {
+                // Xóa sản phẩm khỏi giỏ hàng trên giao diện
+                $(`[data-product-id="${productId}"]`).closest('tr').remove();
+                $('#remove-success-alert').fadeIn().delay(3000).fadeOut();
+              },
+              error: function (error) {
+                console.error("Error removing product:", error);
+              }
+            });
+          }
+          else
+          {
+            alert("Bạn không được phép thực hiện hành động này")
+          }
+
+        });}
+        });
 
       // Sự kiện cho nút xóa
-      $(document).on('click', '.remove-btn', function () {
-        const productId = $(this).data('product-id'); // Lấy productId từ thuộc tính data-product-id
 
-        // Gọi API để xóa sản phẩm khỏi giỏ hàng
-        const token = localStorage.getItem("jwtToken"); // Lấy token từ localStorage
-        $.ajax({
-          url: `/api/products/remove/${productId}`,  // API để xóa sản phẩm
-          type: "DELETE",
-          headers: {
-            "Authorization": `Bearer ${token}`, // Thêm token vào header
-            "Content-Type": "application/json",
-          },
-          success: function (response) {
-            // Xóa sản phẩm khỏi giỏ hàng trên giao diện
-            $(`[data-product-id="${productId}"]`).closest('tr').remove();
-            $('#remove-success-alert').fadeIn().delay(3000).fadeOut();
-          },
-          error: function (error) {
-            console.error("Error removing product:", error);
-          }
-        });
-      });
 
     });
 

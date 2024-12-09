@@ -66,81 +66,106 @@
 
 <!-- Custom JS -->
 <script>
-    // Gọi API lấy dữ liệu doanh thu hôm nay
-    $.ajax({
-        url: '/api/revenue/today',
-        method: 'GET',
-        dataType: 'json',
-        success: function(data) {
-            $('#todayRevenue').text(new Intl.NumberFormat().format(data.revenue) + " VND");
-        },
-        error: function(xhr, status, error) {
-            console.error('Có lỗi khi lấy dữ liệu doanh thu hôm nay:', error);
+    function checkAdminRole() {
+        const token = localStorage.getItem('jwtToken'); // Lấy token từ localStorage hoặc cookie
+        if (!token) {
+            alert('Bạn không có quyền truy cập!');
+            return false;
         }
-    });
 
-    // Gọi API lấy dữ liệu doanh thu tháng
-    $.ajax({
-        url: '/api/revenue/monthly',
-        method: 'GET',
-        dataType: 'json',
-        success: function(data) {
-            $('#monthlyRevenue').text(new Intl.NumberFormat().format(data.revenue) + " VND");
-        },
-        error: function(xhr, status, error) {
-            console.error('Có lỗi khi lấy dữ liệu doanh thu tháng:', error);
+        try {
+            const decoded = jwt_decode(token); // Giải mã token
+            const role = decoded.role; // Lấy vai trò từ payload
+            if (role === 'Customer' || role ==='Manager') {
+                alert('Chỉ quản trị viên mới có quyền truy cập!');
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error('Token không hợp lệ:', error);
+            alert('Token không hợp lệ! Vui lòng đăng nhập lại.');
+            return false;
         }
-    });
-
-    // Gọi API lấy dữ liệu doanh thu năm
-    $.ajax({
-        url: '/api/revenue/annual',
-        method: 'GET',
-        dataType: 'json',
-        success: function(data) {
-            $('#annualRevenue').text(new Intl.NumberFormat().format(data.revenue) + " VND");
-        },
-        error: function(xhr, status, error) {
-            console.error('Có lỗi khi lấy dữ liệu doanh thu năm:', error);
-        }
-    });
-
-    // Gọi API lấy dữ liệu doanh thu hàng tháng và vẽ biểu đồ
-    $.ajax({
-        url: '/api/revenue/annual-data',
-        method: 'GET',
-        dataType: 'json',
-        success: function(data) {
-            // Vẽ biểu đồ
-            const ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: [
-                        "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
-                        "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
-                    ],
-                    datasets: [{
-                        label: 'Doanh thu (VND)',
-                        data: data.monthlyRevenue, // Dữ liệu doanh thu tháng
-                        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                        borderColor: 'rgba(54, 162, 235, 1)',
-                        borderWidth: 1
-                    }]
+    }
+    $(document).ready(() => {
+        if (checkAdminRole()) {// bỏ hết script ở đây
+            $.ajax({
+                url: '/api/revenue/today',
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    $('#todayRevenue').text(new Intl.NumberFormat().format(data.revenue) + " VND");
                 },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
+                error: function(xhr, status, error) {
+                    console.error('Có lỗi khi lấy dữ liệu doanh thu hôm nay:', error);
                 }
             });
-        },
-        error: function(xhr, status, error) {
-            console.error('Có lỗi khi lấy dữ liệu doanh thu 12 tháng:', error);
-        }
-    });
+
+            // Gọi API lấy dữ liệu doanh thu tháng
+            $.ajax({
+                url: '/api/revenue/monthly',
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    $('#monthlyRevenue').text(new Intl.NumberFormat().format(data.revenue) + " VND");
+                },
+                error: function(xhr, status, error) {
+                    console.error('Có lỗi khi lấy dữ liệu doanh thu tháng:', error);
+                }
+            });
+
+            // Gọi API lấy dữ liệu doanh thu năm
+            $.ajax({
+                url: '/api/revenue/annual',
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    $('#annualRevenue').text(new Intl.NumberFormat().format(data.revenue) + " VND");
+                },
+                error: function(xhr, status, error) {
+                    console.error('Có lỗi khi lấy dữ liệu doanh thu năm:', error);
+                }
+            });
+
+            // Gọi API lấy dữ liệu doanh thu hàng tháng và vẽ biểu đồ
+            $.ajax({
+                url: '/api/revenue/annual-data',
+                method: 'GET',
+                dataType: 'json',
+                success: function(data) {
+                    // Vẽ biểu đồ
+                    const ctx = document.getElementById('monthlyRevenueChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: [
+                                "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
+                                "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
+                            ],
+                            datasets: [{
+                                label: 'Doanh thu (VND)',
+                                data: data.monthlyRevenue, // Dữ liệu doanh thu tháng
+                                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+                },
+                error: function(xhr, status, error) {
+                    console.error('Có lỗi khi lấy dữ liệu doanh thu 12 tháng:', error);
+                }
+            }); }
+        });
+    // Gọi API lấy dữ liệu doanh thu hôm nay
+
 
 </script>
 

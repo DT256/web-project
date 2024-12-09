@@ -74,46 +74,68 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
-        $(document).ready(function () {
-            const token = localStorage.getItem('jwtToken');
-            const pageSize = 10; // Số lượng mục mỗi trang
-            let currentPage = 0; // Trang hiện tại
+        function checkAdminRole() {
+            const token = localStorage.getItem('jwtToken'); // Lấy token từ localStorage hoặc cookie
+            if (!token) {
+                alert('Bạn không có quyền truy cập!');
+                return false;
+            }
 
-            function loadOrders(page, keyword = "", status = "") {
-                console.log(status)
-                var url = `/api/orders?page=${page}&size=${pageSize}`
-                if (keyword !=="") url = `/api/orders/search/${keyword}?page=${page}&size=${pageSize}`
-                if (status !=="") url = `/api/orders/search/${status}?page=${page}&size=${pageSize}`
+            try {
+                const decoded = jwt_decode(token); // Giải mã token
+                const role = decoded.role; // Lấy vai trò từ payload
+                if (role === 'Customer') {
+                    alert('Chỉ quản trị viên mới có quyền truy cập!');
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Token không hợp lệ:', error);
+                alert('Token không hợp lệ! Vui lòng đăng nhập lại.');
+                return false;
+            }
+        }
+        $(document).ready(() => {
+            if (checkAdminRole()) {$(document).ready(function () {
+                const token = localStorage.getItem('jwtToken');
+                const pageSize = 10; // Số lượng mục mỗi trang
+                let currentPage = 0; // Trang hiện tại
 
-                console.log(url)
+                function loadOrders(page, keyword = "", status = "") {
+                    console.log(status)
+                    var url = `/api/orders?page=${page}&size=${pageSize}`
+                    if (keyword !=="") url = `/api/orders/search/${keyword}?page=${page}&size=${pageSize}`
+                    if (status !=="") url = `/api/orders/search/${status}?page=${page}&size=${pageSize}`
 
-                if (token) {
-                    $.ajax({
-                        url: url,
-                        type: 'GET',
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        },
-                        success: function (response) {
-                            const {content: orderList, totalPages} = response;
-                            var tableBody = $('#orderTable tbody');
-                            const pagination = $('#pagination');
+                    console.log(url)
 
-                            // Xóa dữ liệu cũ
-                            tableBody.empty();
-                            pagination.empty();
-                            if (orderList.length === 0) {
-                                // Nếu không có dữ liệu, hiển thị dòng thông báo
-                                tableBody.append('<tr><td colspan="8" class="text-center">Không có khách hàng nào!</td></tr>');
-                            } else {
-                                const shippingStatusMap = {
-                                    NONDELIVERY: "Chưa giao",
-                                    DELIVERING: "Đang giao",
-                                    DELIVERIED: "Đã giao",
-                                    CANCELED: "Đã hủy"
-                                };
-                                orderList.forEach(function (order, index) {
-                                    const row = `
+                    if (token) {
+                        $.ajax({
+                            url: url,
+                            type: 'GET',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            success: function (response) {
+                                const {content: orderList, totalPages} = response;
+                                var tableBody = $('#orderTable tbody');
+                                const pagination = $('#pagination');
+
+                                // Xóa dữ liệu cũ
+                                tableBody.empty();
+                                pagination.empty();
+                                if (orderList.length === 0) {
+                                    // Nếu không có dữ liệu, hiển thị dòng thông báo
+                                    tableBody.append('<tr><td colspan="8" class="text-center">Không có khách hàng nào!</td></tr>');
+                                } else {
+                                    const shippingStatusMap = {
+                                        NONDELIVERY: "Chưa giao",
+                                        DELIVERING: "Đang giao",
+                                        DELIVERIED: "Đã giao",
+                                        CANCELED: "Đã hủy"
+                                    };
+                                    orderList.forEach(function (order, index) {
+                                        const row = `
                                 <tr data-id="${order.orderId}">
                                     <td>${index + 1}</td>
                                     <td>${order.orderId}</td>
@@ -125,65 +147,67 @@
                                         <a href="/admin/orders/${order.orderId}" class="btn btn-danger custom-hover">Chi tiết</a>
                                     </td>
                                 </tr> `;
-                                    tableBody.append(row);
-                                });
-                            }
-                            // Tạo nút phân trang
-                            const prevButton = `<li class="page-item ${page === 0 ? 'disabled' : ''}">
+                                        tableBody.append(row);
+                                    });
+                                }
+                                // Tạo nút phân trang
+                                const prevButton = `<li class="page-item ${page === 0 ? 'disabled' : ''}">
                                     <a class="page-link" href="#">« Previous</a>
                                     </li>`;
 
-                            const nextButton = `<li class="page-item ${page === totalPages - 1 ? 'disabled' : ''}">
+                                const nextButton = `<li class="page-item ${page === totalPages - 1 ? 'disabled' : ''}">
                                     <a class="page-link" href="#">Next »</a>
                                     </li>`;
 
-                            pagination.append(prevButton);
+                                pagination.append(prevButton);
 
-                            // Create page number buttons
-                            for (let i = 0; i < totalPages; i++) {
-                                const activeClass = i === page ? 'active' : '';
-                                const pageButton = `<li class="page-item ${activeClass}"><a class="page-link" href="#">${i + 1}</a></li>`;
-                                pagination.append(pageButton);
-                            }
-
-                            pagination.append(nextButton);
-                            // Gắn sự kiện khi nhấn nút phân trang
-                            $('.page-link').on('click', function (e) {
-                                e.preventDefault();
-
-                                const selectedPage = $(this).text().trim();
-
-                                if (selectedPage === '« Trước') {
-                                    if (page > 0) loadOrders(page - 1); // Go to previous page
-                                } else if (selectedPage === 'Sau »') {
-                                    if (page < totalPages - 1) loadOrders(page + 1); // Go to next page
-                                } else {
-                                    loadOrders(parseInt(selectedPage) - 1); // Go to specific page
+                                // Create page number buttons
+                                for (let i = 0; i < totalPages; i++) {
+                                    const activeClass = i === page ? 'active' : '';
+                                    const pageButton = `<li class="page-item ${activeClass}"><a class="page-link" href="#">${i + 1}</a></li>`;
+                                    pagination.append(pageButton);
                                 }
-                            });
-                        },
-                        error: function (xhr, status, error) {
-                            console.error("Error fetching order:", error);
-                            alert("Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau!");
-                        }
-                    })
+
+                                pagination.append(nextButton);
+                                // Gắn sự kiện khi nhấn nút phân trang
+                                $('.page-link').on('click', function (e) {
+                                    e.preventDefault();
+
+                                    const selectedPage = $(this).text().trim();
+
+                                    if (selectedPage === '« Trước') {
+                                        if (page > 0) loadOrders(page - 1); // Go to previous page
+                                    } else if (selectedPage === 'Sau »') {
+                                        if (page < totalPages - 1) loadOrders(page + 1); // Go to next page
+                                    } else {
+                                        loadOrders(parseInt(selectedPage) - 1); // Go to specific page
+                                    }
+                                });
+                            },
+                            error: function (xhr, status, error) {
+                                console.error("Error fetching order:", error);
+                                alert("Không thể tải dữ liệu đơn hàng. Vui lòng thử lại sau!");
+                            }
+                        })
+                    }
                 }
-            }
 
-            // Xử lý sự kiện tìm kiếm
-            $('#searchForm').on('submit', function (e) {
-                e.preventDefault();
+                // Xử lý sự kiện tìm kiếm
+                $('#searchForm').on('submit', function (e) {
+                    e.preventDefault();
 
-                const keyword = $('#keyword').val().trim();
-                const status = $('#status').val();
+                    const keyword = $('#keyword').val().trim();
+                    const status = $('#status').val();
 
-                currentPage = 0; // Reset về trang đầu tiên
-                loadOrders(currentPage, keyword, status); // Gọi API với từ khóa tìm kiếm và trạng thái
+                    currentPage = 0; // Reset về trang đầu tiên
+                    loadOrders(currentPage, keyword, status); // Gọi API với từ khóa tìm kiếm và trạng thái
+                });
+
+                // Tải trang đầu tiên khi trang được load
+                loadOrders(currentPage);
+            })}
             });
 
-            // Tải trang đầu tiên khi trang được load
-            loadOrders(currentPage);
-        })
     </script>
 
 
