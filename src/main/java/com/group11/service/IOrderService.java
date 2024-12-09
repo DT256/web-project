@@ -16,4 +16,6 @@ public interface IOrderService {
     public Page<OrderResponse> searchOrders(String keyword, int page, int size);
     public OrderEntity createOrder(String token, CheckoutResponse response);
     public CheckoutResponse checkOutOrder(String token, List<LineItemRequest> cartItems);
+    public void setDelivering(Long id);
+    public void setDeliveried(Long id);
 }

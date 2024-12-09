@@ -47,6 +47,19 @@ public class OrderRestController {
         return orderService.getOrderById(id);
     }
 
+    @PostMapping("/delivering/{id}")
+    public ResponseEntity<String> setDelivering(@PathVariable Long id) {
+        orderService.setDelivering(id);
+        return ResponseEntity.ok("Xác nhận đơn đang giao thành công");
+    }
+
+    @PostMapping("/deliveried/{id}")
+    public ResponseEntity<String> setDeliveried(@PathVariable Long id) {
+        orderService.setDeliveried(id);
+        return ResponseEntity.ok("Xác nhận đơn đã giao thành công");
+    }
+
+
     @GetMapping("/user/{id}")
     public Page<OrderResponse> getOrdersByUserId(
             @PathVariable Long id,
