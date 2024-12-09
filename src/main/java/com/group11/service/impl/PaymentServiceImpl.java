@@ -78,7 +78,7 @@ public class PaymentServiceImpl implements IPaymentService {
         paymentEntity.setOrder(order);
 
         paymentRepository.save(paymentEntity);
-        order.setPayment(paymentEntity);
+        //order.setPayment(paymentEntity);
         orderRepository.save(order);
 
         List<LineItemEntity> lineItem = order.getListLineItems();
